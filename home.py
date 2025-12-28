@@ -5,39 +5,48 @@ import base64
 import json
 from datetime import datetime
 
-# -----------------------------
+# ============================================================
 # 기본 설정
-# -----------------------------
+# ============================================================
 st.set_page_config(
     page_title="E-편한 출고 | 출고통합시스템",
     page_icon="📦",
     layout="centered",
 )
 
-# -----------------------------
+# ============================================================
 # 설정값
-# -----------------------------
+# ============================================================
 SCROLL_SECONDS = 10
 NOTICE_FILE = Path("notices.json")
 
-# 관리자 비밀번호 (1) secrets 우선, (2) 없으면 기본값 사용
-# .streamlit/secrets.toml 에 ADMIN_PASSWORD="원하는비번" 으로 넣는걸 추천
+# Streamlit Cloud 권장: .streamlit/secrets.toml에 ADMIN_PASSWORD="비번" 설정
 ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "admin1234")
 
-# -----------------------------
+# ============================================================
+# 공지 기본값 (파일 없거나 깨졌을 때 사용)
+# ============================================================
+DEFAULT_NOTICES = [
+    "2025-01-05 쿠팡 송장 포맷 업데이트 예정",
+    "금일(12/28) 18:00 시스템 점검 예정",
+    "신규 기능: 제안상품 자동 분류 기능 추가",
+    "출고 마감: 평일 16:30 / 토 12:00",
+]
+
+# ============================================================
 # 메뉴
-# -----------------------------
+# ============================================================
 MENU = [
-    ("📦", "제안 상품 일괄등록", "https://newappuct-3jvtvi9fafvdhqhzmstvs3.streamlit.app"),
+    ("📦", "제안 상품 등록", "https://newappuct-3jvtvi9fafvdhqhzmstvs3.streamlit.app"),
     ("🧾", "피킹용 주문서 출력", "https://g89qgzdijtiiazrp2rvflj.streamlit.app"),
     ("🚚", "합배/단품 나누어서 송장 출력", "https://songjangg.streamlit.app"),
     ("🏬", "쿠팡/스마트스토어 송장 출력", "https://coupsmartconvert.streamlit.app"),
-    ("📋", "창고임당용 주문서 변환 및 송장번호 등록용", "https://finalbalzoo.streamlit.app"),
+    ("📋", "창고입당용 주문서 변환 및 송장번호 등록용", "https://finalbalzoo.streamlit.app"),
 ]
 
-# -----------------------------
+# ============================================================
 # 로고
-# -----------------------------
+# ============================================================
 LOGO_CANDIDATES = ["logo.png", "logo.jpg", "logo.jpeg"]
 
 def find_logo_path():
@@ -46,43 +55,39 @@ def find_logo_path():
             return p
     return None
 
-def img_to_base64(img_path):
+def img_to_base64(img_path: str) -> str:
     return base64.b64encode(Path(img_path).read_bytes()).decode("utf-8")
 
 logo_path = find_logo_path()
 logo_b64 = img_to_base64(logo_path) if logo_path else None
 
-# -----------------------------
+# ============================================================
 # 공지 로드/저장
-# -----------------------------
-DEFAULT_NOTICES = [
-    "2025-01-05 쿠팡 송장 포맷 업데이트 예정",
-    "금일(12/28) 18:00 시스템 점검 예정",
-    "신규 기능: 제안상품 자동 분류 기능 추가",
-    "출고 마감: 평일 16:30 / 토 12:00",
-]
-
+# ============================================================
 def load_notices() -> list[str]:
     if NOTICE_FILE.exists():
         try:
             data = json.loads(NOTICE_FILE.read_text(encoding="utf-8"))
             if isinstance(data, list):
-                return [str(x) for x in data if str(x).strip()]
+                out = [str(x).strip() for x in data if str(x).strip()]
+                return out if out else DEFAULT_NOTICES.copy()
         except Exception:
             pass
     return DEFAULT_NOTICES.copy()
 
 def save_notices(notices: list[str]) -> None:
-    clean = [n.strip() for n in notices if n and n.strip()]
+    clean = [str(n).strip() for n in notices if str(n).strip()]
     NOTICE_FILE.write_text(json.dumps(clean, ensure_ascii=False, indent=2), encoding="utf-8")
 
-# 세션 공지 캐시
+# 세션 상태 초기화
 if "notices" not in st.session_state:
     st.session_state["notices"] = load_notices()
+if "admin_ok" not in st.session_state:
+    st.session_state["admin_ok"] = False
 
-# -----------------------------
+# ============================================================
 # 스타일
-# -----------------------------
+# ============================================================
 st.markdown(
     f"""
     <style>
@@ -94,7 +99,7 @@ st.markdown(
         padding: 8px 10px 28px;
       }}
 
-      /* 공지 자동 스크롤 */
+      /* ===== 공지 자동 스크롤 ===== */
       .notice-box {{
         background: #f8f9fb;
         border: 1px solid rgba(0,0,0,0.08);
@@ -131,7 +136,7 @@ st.markdown(
         100% {{ transform: translateY(-50%); }}
       }}
 
-      /* 타이틀 */
+      /* ===== 타이틀 ===== */
       .title {{
         text-align: center;
         font-size: clamp(30px, 4.2vw, 46px);
@@ -145,7 +150,7 @@ st.markdown(
         margin-bottom: 18px;
       }}
 
-      /* 로고 - 실무용 베스트 */
+      /* ===== 로고 (실무용 베스트) ===== */
       .logo {{
         display: flex;
         justify-content: center;
@@ -162,7 +167,7 @@ st.markdown(
         background: #fff;
       }}
 
-      /* 메뉴 */
+      /* ===== 메뉴 ===== */
       .menu {{
         display: grid;
         gap: 14px;
@@ -206,15 +211,15 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# -----------------------------
+# ============================================================
 # 사이드바: 페이지 선택
-# -----------------------------
+# ============================================================
 st.sidebar.title("📦 출고통합시스템")
 page = st.sidebar.radio("이동", ["홈", "공지 관리자"], index=0)
 
-# -----------------------------
+# ============================================================
 # 페이지: 홈
-# -----------------------------
+# ============================================================
 if page == "홈":
     st.markdown('<div class="wrap">', unsafe_allow_html=True)
 
@@ -247,6 +252,8 @@ if page == "홈":
             f'<div class="logo"><img src="data:image/png;base64,{logo_b64}"></div>',
             unsafe_allow_html=True
         )
+    else:
+        st.info("로고 파일(logo.png / logo.jpg)이 프로젝트 폴더에 필요합니다.")
 
     menu_html = '<div class="menu">'
     for icon, label, url in MENU:
@@ -269,22 +276,11 @@ if page == "홈":
     )
     st.markdown("</div>", unsafe_allow_html=True)
 
-# -----------------------------
-# 페이지: 공지 관리자
-# -----------------------------
-# -----------------------------
-# 페이지: 공지 관리자 (수정/삭제/추가 안정화 버전)
-# -----------------------------
+# ============================================================
+# 페이지: 공지 관리자 (정상 동작/에러 방지)
+# ============================================================
 else:
     st.title("🔐 공지 관리자")
-
-    # 로그인 상태 초기화
-    if "admin_ok" not in st.session_state:
-        st.session_state["admin_ok"] = False
-
-    # notices 상태 보장
-    if "notices" not in st.session_state:
-        st.session_state["notices"] = load_notices()
 
     with st.expander("비밀번호 입력", expanded=not st.session_state["admin_ok"]):
         pw = st.text_input("관리자 비밀번호", type="password", placeholder="비밀번호를 입력하세요", key="admin_pw")
@@ -298,10 +294,9 @@ else:
         st.stop()
 
     st.success("관리자 인증 완료 ✅")
-
     st.subheader("현재 공지 목록 (수정 후 저장)")
 
-    # 공지 편집 영역: text_input은 session_state에 저장되므로, 저장 버튼에서 한 번에 반영
+    # 공지 편집/삭제
     for i in range(len(st.session_state["notices"])):
         col1, col2 = st.columns([8, 1.6])
         with col1:
@@ -312,10 +307,9 @@ else:
             )
         with col2:
             if st.button("삭제", key=f"notice_delete_{i}"):
-                # ✅ 삭제는 session_state 리스트를 직접 수정
                 st.session_state["notices"].pop(i)
 
-                # 편집 키들이 인덱스 기반이라 삭제 후 정리 필요 (안 하면 값이 꼬일 수 있음)
+                # 인덱스 기반 키 정리
                 for k in list(st.session_state.keys()):
                     if k.startswith("notice_edit_"):
                         del st.session_state[k]
@@ -326,35 +320,33 @@ else:
 
     st.divider()
 
-   st.subheader("공지 추가")
+    # ✅ 공지 추가 (form + clear_on_submit로 에러 방지)
+    st.subheader("공지 추가")
+    with st.form("notice_add_form", clear_on_submit=True):
+        new_notice = st.text_input(
+            "새 공지 내용",
+            placeholder="예) 2025-01-05 쿠팡 송장 포맷 업데이트 예정",
+            key="new_notice_input",
+        )
+        submitted = st.form_submit_button("추가")
 
-with st.form("notice_add_form", clear_on_submit=True):
-    new_notice = st.text_input(
-        "새 공지 내용",
-        placeholder="예) 2025-01-05 쿠팡 송장 포맷 업데이트 예정",
-        key="new_notice_input",
-    )
-    submitted = st.form_submit_button("추가")
+    if submitted:
+        if new_notice.strip():
+            st.session_state["notices"].append(new_notice.strip())
+            save_notices(st.session_state["notices"])
 
-if submitted:
-    if new_notice.strip():
-        st.session_state["notices"].append(new_notice.strip())
-        save_notices(st.session_state["notices"])
+            for k in list(st.session_state.keys()):
+                if k.startswith("notice_edit_"):
+                    del st.session_state[k]
 
-        # 인덱스 기반 편집키 정리(삭제/추가 후 꼬임 방지)
-        for k in list(st.session_state.keys()):
-            if k.startswith("notice_edit_"):
-                del st.session_state[k]
-
-        st.success("추가 완료 ✅")
-        st.rerun()
-    else:
-        st.warning("공지 내용을 입력하세요.")
-
+            st.success("추가 완료 ✅")
+            st.rerun()
+        else:
+            st.warning("공지 내용을 입력하세요.")
 
     st.divider()
 
-    # ✅ 저장 버튼: notice_edit_*에 입력된 값을 notices로 반영 후 저장
+    # 저장/복원
     c1, c2, c3 = st.columns([2, 2, 6])
     with c1:
         if st.button("저장", key="notice_save"):
@@ -368,7 +360,6 @@ if submitted:
             st.session_state["notices"] = updated
             save_notices(st.session_state["notices"])
 
-            # 편집 키 정리(인덱스 기반)
             for k in list(st.session_state.keys()):
                 if k.startswith("notice_edit_"):
                     del st.session_state[k]
@@ -387,3 +378,5 @@ if submitted:
 
             st.info("기본값으로 복원했습니다.")
             st.rerun()
+
+    st.caption(f"마지막 확인: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
