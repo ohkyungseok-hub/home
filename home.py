@@ -13,17 +13,19 @@ st.set_page_config(
 )
 
 # -----------------------------
-# 링크 매핑 (위에서부터 순서대로)
+# 링크 매핑 (아이콘, 라벨, URL)
 # -----------------------------
 MENU = [
-    ("제안 상품 등록", "https://newappuct-3jvtvi9fafvdhqhzmstvs3.streamlit.app"),
-    ("피킹용 주문서 출력", "https://g89qgzdijtiiazrp2rvflj.streamlit.app"),
-    ("합배/단품 나누어서 송장 출력", "https://songjangg.streamlit.app"),
-    ("쿠팡/스마트스토어 송장 출력", "https://coupsmartconvert.streamlit.app"),
-    ("창고입당용 주문서 변환 및 송장번호 등록용", "https://finalbalzoo.streamlit.app"),
+    ("📦", "제안 상품 등록", "https://newappuct-3jvtvi9fafvdhqhzmstvs3.streamlit.app"),
+    ("🧾", "피킹용 주문서 출력", "https://g89qgzdijtiiazrp2rvflj.streamlit.app"),
+    ("🚚", "합배/단품 나누어서 송장 출력", "https://songjangg.streamlit.app"),
+    ("🏬", "쿠팡/스마트스토어 송장 출력", "https://coupsmartconvert.streamlit.app"),
+    ("📋", "창고입당용 주문서 변환 및 송장번호 등록용", "https://finalbalzoo.streamlit.app"),
 ]
 
+# -----------------------------
 # 로고 파일 (png/jpg 모두 허용)
+# -----------------------------
 LOGO_CANDIDATES = ["logo.png", "logo.jpg", "logo.jpeg"]
 
 def find_logo_path() -> str | None:
@@ -44,7 +46,7 @@ logo_b64 = img_to_base64(logo_path) if logo_path else None
 st.markdown(
     """
     <style>
-      /* Streamlit 기본 헤더/푸터 숨김 (원하면 제거 가능) */
+      /* Streamlit 기본 요소 숨김 (원하면 제거 가능) */
       header {visibility: hidden;}
       footer {visibility: hidden;}
       #MainMenu {visibility: hidden;}
@@ -55,11 +57,11 @@ st.markdown(
         padding: 8px 10px 28px;
       }
 
-      /* 모바일 대응: 폰트 자동 조절 */
+      /* 모바일 대응 */
       .title {
         text-align: center;
         font-size: clamp(30px, 4.2vw, 46px);
-        font-weight: 1500;
+        font-weight: 900;
         letter-spacing: -1px;
         margin-top: 6px;
         margin-bottom: 2px;
@@ -67,7 +69,7 @@ st.markdown(
       .subtitle {
         text-align: center;
         font-size: clamp(30px, 4.2vw, 46px);
-        font-weight: 1500;
+        font-weight: 900;
         letter-spacing: -1px;
         margin-top: -4px;
         margin-bottom: 18px;
@@ -95,7 +97,7 @@ st.markdown(
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 22px 22px;
+        padding: 22px 22px; /* 버튼 높이 조금 키움 */
         border-radius: 16px;
         border: 1px solid rgba(0,0,0,0.08);
         background: #ffffff;
@@ -115,15 +117,16 @@ st.markdown(
         gap: 12px;
         min-width: 0;
       }
-      .dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: #111;
+
+      .icon {
+        font-size: 28px;
+        line-height: 1;
         flex: 0 0 auto;
+        margin-right: 2px;
       }
+
       .label {
-        font-size: clamp(50px, 2.6vw, 50px);
+        font-size: clamp(22px, 2.6vw, 30px); /* 글자 키움 */
         font-weight: 900;
         letter-spacing: -0.6px;
         color: #111;
@@ -131,6 +134,7 @@ st.markdown(
         text-overflow: ellipsis;
         white-space: nowrap;
       }
+
       .arrow {
         font-size: 20px;
         color: rgba(0,0,0,0.45);
@@ -175,11 +179,11 @@ else:
 # 메뉴 버튼 (components.html로 안전 렌더링)
 # -----------------------------
 menu_html = '<div class="menu">'
-for label, url in MENU:
+for icon, label, url in MENU:
     menu_html += f"""
 <a class="btn" href="{url}" target="_blank" rel="noopener noreferrer">
   <div class="btn-left">
-    <div class="dot"></div>
+    <div class="icon">{icon}</div>
     <div class="label">{label}</div>
   </div>
   <div class="arrow">↗</div>
@@ -187,8 +191,8 @@ for label, url in MENU:
 """.strip()
 menu_html += "</div>"
 
-# 버튼 개수에 맞게 높이 자동-ish 설정 (대충)
-components.html(menu_html, height=95 * len(MENU) + 30, scrolling=False)
+# 버튼/간격에 맞춘 높이 (약간 여유)
+components.html(menu_html, height=120 * len(MENU) + 40, scrolling=False)
 
 # -----------------------------
 # 하단 푸터
