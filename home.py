@@ -59,7 +59,7 @@ st.markdown(
       .title {
         text-align: center;
         font-size: clamp(30px, 4.2vw, 46px);
-        font-weight: 900;
+        font-weight: 1500;
         letter-spacing: -1px;
         margin-top: 6px;
         margin-bottom: 2px;
@@ -67,7 +67,7 @@ st.markdown(
       .subtitle {
         text-align: center;
         font-size: clamp(30px, 4.2vw, 46px);
-        font-weight: 900;
+        font-weight: 1500;
         letter-spacing: -1px;
         margin-top: -4px;
         margin-bottom: 18px;
@@ -123,7 +123,7 @@ st.markdown(
         flex: 0 0 auto;
       }
       .label {
-        font-size: clamp(18px, 2.2vw, 24px);
+        font-size: clamp(30px, 2.2vw, 24px);
         font-weight: 900;
         letter-spacing: -0.6px;
         color: #111;
