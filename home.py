@@ -326,28 +326,31 @@ else:
 
     st.divider()
 
-    st.subheader("공지 추가")
+   st.subheader("공지 추가")
+
+with st.form("notice_add_form", clear_on_submit=True):
     new_notice = st.text_input(
         "새 공지 내용",
         placeholder="예) 2025-01-05 쿠팡 송장 포맷 업데이트 예정",
         key="new_notice_input",
     )
+    submitted = st.form_submit_button("추가")
 
-    c_add1, c_add2 = st.columns([2, 8])
-    with c_add1:
-        if st.button("추가", key="notice_add"):
-            if new_notice.strip():
-                st.session_state["notices"].append(new_notice.strip())
-                st.session_state["new_notice_input"] = ""  # 입력창 비우기
-                save_notices(st.session_state["notices"])
-                st.success("추가 완료 ✅")
-                # 편집 키도 초기화(인덱스 싱크)
-                for k in list(st.session_state.keys()):
-                    if k.startswith("notice_edit_"):
-                        del st.session_state[k]
-                st.rerun()
-            else:
-                st.warning("공지 내용을 입력하세요.")
+if submitted:
+    if new_notice.strip():
+        st.session_state["notices"].append(new_notice.strip())
+        save_notices(st.session_state["notices"])
+
+        # 인덱스 기반 편집키 정리(삭제/추가 후 꼬임 방지)
+        for k in list(st.session_state.keys()):
+            if k.startswith("notice_edit_"):
+                del st.session_state[k]
+
+        st.success("추가 완료 ✅")
+        st.rerun()
+    else:
+        st.warning("공지 내용을 입력하세요.")
+
 
     st.divider()
 
