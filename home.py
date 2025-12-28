@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 from pathlib import Path
 import base64
 
@@ -22,10 +23,10 @@ MENU = [
     ("창고입당용 주문서 변환 및 송장번호 등록용", "https://finalbalzoo.streamlit.app"),
 ]
 
-# 로고 파일 (png/jpg 모두 허용하도록)
+# 로고 파일 (png/jpg 모두 허용)
 LOGO_CANDIDATES = ["logo.png", "logo.jpg", "logo.jpeg"]
 
-def find_logo_path():
+def find_logo_path() -> str | None:
     for p in LOGO_CANDIDATES:
         if Path(p).exists():
             return p
@@ -43,9 +44,10 @@ logo_b64 = img_to_base64(logo_path) if logo_path else None
 st.markdown(
     """
     <style>
-      /* Streamlit 기본 헤더/푸터 여백 정리 (필요 없으면 주석처리 가능) */
+      /* Streamlit 기본 헤더/푸터 숨김 (원하면 제거 가능) */
       header {visibility: hidden;}
       footer {visibility: hidden;}
+      #MainMenu {visibility: hidden;}
 
       .wrap {
         max-width: 920px;
@@ -53,7 +55,7 @@ st.markdown(
         padding: 8px 10px 28px;
       }
 
-      /* 모바일에서 폰트 자동 줄어들도록 clamp 사용 */
+      /* 모바일 대응: 폰트 자동 조절 */
       .title {
         text-align: center;
         font-size: clamp(30px, 4.2vw, 46px);
@@ -151,10 +153,9 @@ st.markdown(
 )
 
 # -----------------------------
-# 화면 렌더링
+# 화면 렌더링 (상단: 타이틀/로고)
 # -----------------------------
 st.markdown('<div class="wrap">', unsafe_allow_html=True)
-
 st.markdown('<div class="title">E- 편한 출고</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">출고통합시스템</div>', unsafe_allow_html=True)
 
@@ -170,26 +171,30 @@ if logo_b64:
 else:
     st.info("로고 파일을 찾지 못했습니다. logo.png 또는 logo.jpg를 프로젝트 폴더에 넣어주세요.")
 
-# 메뉴 버튼 (새 탭 열기: target="_blank")
-menu_html = ['<div class="menu">']
+# -----------------------------
+# 메뉴 버튼 (components.html로 안전 렌더링)
+# -----------------------------
+menu_html = '<div class="menu">'
 for label, url in MENU:
-    menu_html.append(
-        f"""
-        <a class="btn" href="{url}" target="_blank" rel="noopener noreferrer">
-          <div class="btn-left">
-            <div class="dot"></div>
-            <div class="label">{label}</div>
-          </div>
-          <div class="arrow">↗</div>
-        </a>
-        """
-    )
-menu_html.append("</div>")
-st.markdown("\n".join(menu_html), unsafe_allow_html=True)
+    menu_html += f"""
+<a class="btn" href="{url}" target="_blank" rel="noopener noreferrer">
+  <div class="btn-left">
+    <div class="dot"></div>
+    <div class="label">{label}</div>
+  </div>
+  <div class="arrow">↗</div>
+</a>
+""".strip()
+menu_html += "</div>"
 
+# 버튼 개수에 맞게 높이 자동-ish 설정 (대충)
+components.html(menu_html, height=95 * len(MENU) + 30, scrolling=False)
+
+# -----------------------------
+# 하단 푸터
+# -----------------------------
 st.markdown(
     '<div class="footerline">ⓒ AFOURS Co., Ltd. | E-편한 출고 통합시스템</div>',
     unsafe_allow_html=True
 )
-
 st.markdown("</div>", unsafe_allow_html=True)
