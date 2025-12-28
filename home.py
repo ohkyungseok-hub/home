@@ -22,54 +22,63 @@ MENU = [
     ("창고입당용 주문서 변환 및 송장번호 등록용", "https://finalbalzoo.streamlit.app"),
 ]
 
-LOGO_PATH = "logo.png"  # 로고 파일명/경로
+# 로고 파일 (png/jpg 모두 허용하도록)
+LOGO_CANDIDATES = ["logo.png", "logo.jpg", "logo.jpeg"]
+
+def find_logo_path():
+    for p in LOGO_CANDIDATES:
+        if Path(p).exists():
+            return p
+    return None
+
+def img_to_base64(img_path: str) -> str:
+    return base64.b64encode(Path(img_path).read_bytes()).decode("utf-8")
+
+logo_path = find_logo_path()
+logo_b64 = img_to_base64(logo_path) if logo_path else None
 
 # -----------------------------
-# 유틸: 로고를 HTML로 중앙 정렬 출력
-# -----------------------------
-def img_to_base64(img_path: str) -> str | None:
-    p = Path(img_path)
-    if not p.exists():
-        return None
-    return base64.b64encode(p.read_bytes()).decode("utf-8")
-
-logo_b64 = img_to_base64(LOGO_PATH)
-
-# -----------------------------
-# 스타일 (버튼형 메뉴 + 전체 톤)
+# 스타일
 # -----------------------------
 st.markdown(
     """
     <style>
+      /* Streamlit 기본 헤더/푸터 여백 정리 (필요 없으면 주석처리 가능) */
+      header {visibility: hidden;}
+      footer {visibility: hidden;}
+
       .wrap {
         max-width: 920px;
         margin: 0 auto;
-        padding: 10px 8px 30px;
+        padding: 8px 10px 28px;
       }
+
+      /* 모바일에서 폰트 자동 줄어들도록 clamp 사용 */
       .title {
         text-align: center;
-        font-size: 44px;
+        font-size: clamp(30px, 4.2vw, 46px);
         font-weight: 900;
         letter-spacing: -1px;
         margin-top: 6px;
-        margin-bottom: 4px;
+        margin-bottom: 2px;
       }
       .subtitle {
         text-align: center;
-        font-size: 44px;
+        font-size: clamp(30px, 4.2vw, 46px);
         font-weight: 900;
         letter-spacing: -1px;
-        margin-top: -6px;
+        margin-top: -4px;
         margin-bottom: 18px;
       }
+
       .logo {
         display: flex;
         justify-content: center;
-        margin: 10px 0 26px;
+        margin: 10px 0 24px;
       }
       .logo img {
         width: 280px;
-        max-width: 70vw;
+        max-width: 72vw;
         height: auto;
         filter: drop-shadow(0px 10px 18px rgba(0,0,0,0.12));
       }
@@ -77,8 +86,9 @@ st.markdown(
       .menu {
         display: grid;
         gap: 14px;
-        margin-top: 10px;
+        margin-top: 8px;
       }
+
       .btn {
         display: flex;
         align-items: center;
@@ -86,7 +96,7 @@ st.markdown(
         padding: 18px 18px;
         border-radius: 16px;
         border: 1px solid rgba(0,0,0,0.08);
-        background: rgba(255,255,255,0.9);
+        background: #ffffff;
         box-shadow: 0px 8px 20px rgba(0,0,0,0.06);
         text-decoration: none !important;
         transition: transform 0.08s ease, box-shadow 0.08s ease, border 0.08s ease;
@@ -96,10 +106,12 @@ st.markdown(
         box-shadow: 0px 12px 26px rgba(0,0,0,0.09);
         border: 1px solid rgba(0,0,0,0.14);
       }
+
       .btn-left {
         display: flex;
         align-items: center;
         gap: 12px;
+        min-width: 0;
       }
       .dot {
         width: 10px;
@@ -109,26 +121,30 @@ st.markdown(
         flex: 0 0 auto;
       }
       .label {
-        font-size: 24px;
+        font-size: clamp(18px, 2.2vw, 24px);
         font-weight: 900;
         letter-spacing: -0.6px;
         color: #111;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       .arrow {
         font-size: 20px;
         color: rgba(0,0,0,0.45);
         font-weight: 700;
+        margin-left: 12px;
+        flex: 0 0 auto;
       }
 
-      .footer {
+      .footerline {
         text-align: center;
-        margin-top: 20px;
+        margin-top: 18px;
         color: rgba(0,0,0,0.45);
         font-size: 13px;
       }
 
-      /* Streamlit 상단 여백 조금 줄이기 */
-      section.main > div { padding-top: 20px; }
+      section.main > div { padding-top: 18px; }
     </style>
     """,
     unsafe_allow_html=True
@@ -152,10 +168,9 @@ if logo_b64:
         unsafe_allow_html=True
     )
 else:
-    # 로고 파일이 없을 때 대체 표시
-    st.info("로고 파일을 찾지 못했습니다. 프로젝트 폴더에 'logo.png'를 넣어주세요.")
+    st.info("로고 파일을 찾지 못했습니다. logo.png 또는 logo.jpg를 프로젝트 폴더에 넣어주세요.")
 
-# 메뉴 버튼들
+# 메뉴 버튼 (새 탭 열기: target="_blank")
 menu_html = ['<div class="menu">']
 for label, url in MENU:
     menu_html.append(
@@ -170,11 +185,10 @@ for label, url in MENU:
         """
     )
 menu_html.append("</div>")
-
 st.markdown("\n".join(menu_html), unsafe_allow_html=True)
 
 st.markdown(
-    '<div class="footer">ⓒ AFOURS Co., Ltd. | E-편한 출고 통합시스템</div>',
+    '<div class="footerline">ⓒ AFOURS Co., Ltd. | E-편한 출고 통합시스템</div>',
     unsafe_allow_html=True
 )
 
