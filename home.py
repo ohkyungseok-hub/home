@@ -16,11 +16,11 @@ st.set_page_config(
 # 링크 매핑 (아이콘, 라벨, URL)
 # -----------------------------
 MENU = [
-    ("📦", "제안 상품 등록", "https://newappuct-3jvtvi9fafvdhqhzmstvs3.streamlit.app"),
+    ("📦", "제안 상품 일괄등록", "https://newappuct-3jvtvi9fafvdhqhzmstvs3.streamlit.app"),
     ("🧾", "피킹용 주문서 출력", "https://g89qgzdijtiiazrp2rvflj.streamlit.app"),
     ("🚚", "합배/단품 나누어서 송장 출력", "https://songjangg.streamlit.app"),
     ("🏬", "쿠팡/스마트스토어 송장 출력", "https://coupsmartconvert.streamlit.app"),
-    ("📋", "창고입당용 주문서 변환 및 송장번호 등록용", "https://finalbalzoo.streamlit.app"),
+    ("📋", "창고임당용 주문서 변환 및 송장번호 등록용", "https://finalbalzoo.streamlit.app"),
 ]
 
 # -----------------------------
