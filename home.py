@@ -28,11 +28,11 @@ ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "admin1234")
 # 메뉴
 # -----------------------------
 MENU = [
-    ("📦", "제안 상품 등록", "https://newappuct-3jvtvi9fafvdhqhzmstvs3.streamlit.app"),
+    ("📦", "제안 상품 일괄등록", "https://newappuct-3jvtvi9fafvdhqhzmstvs3.streamlit.app"),
     ("🧾", "피킹용 주문서 출력", "https://g89qgzdijtiiazrp2rvflj.streamlit.app"),
     ("🚚", "합배/단품 나누어서 송장 출력", "https://songjangg.streamlit.app"),
     ("🏬", "쿠팡/스마트스토어 송장 출력", "https://coupsmartconvert.streamlit.app"),
-    ("📋", "창고입당용 주문서 변환 및 송장번호 등록용", "https://finalbalzoo.streamlit.app"),
+    ("📋", "창고임당용 주문서 변환 및 송장번호 등록용", "https://finalbalzoo.streamlit.app"),
 ]
 
 # -----------------------------
@@ -272,19 +272,25 @@ if page == "홈":
 # -----------------------------
 # 페이지: 공지 관리자
 # -----------------------------
+# -----------------------------
+# 페이지: 공지 관리자 (수정/삭제/추가 안정화 버전)
+# -----------------------------
 else:
     st.title("🔐 공지 관리자")
 
-    with st.expander("비밀번호 입력", expanded=True):
-        pw = st.text_input("관리자 비밀번호", type="password", placeholder="비밀번호를 입력하세요")
-        ok = st.button("로그인")
-
-    # 로그인 상태 유지
+    # 로그인 상태 초기화
     if "admin_ok" not in st.session_state:
         st.session_state["admin_ok"] = False
 
-    if ok:
-        st.session_state["admin_ok"] = (pw == ADMIN_PASSWORD)
+    # notices 상태 보장
+    if "notices" not in st.session_state:
+        st.session_state["notices"] = load_notices()
+
+    with st.expander("비밀번호 입력", expanded=not st.session_state["admin_ok"]):
+        pw = st.text_input("관리자 비밀번호", type="password", placeholder="비밀번호를 입력하세요", key="admin_pw")
+        if st.button("로그인", key="admin_login"):
+            st.session_state["admin_ok"] = (pw == ADMIN_PASSWORD)
+            st.rerun()
 
     if not st.session_state["admin_ok"]:
         st.warning("로그인 후 공지를 수정할 수 있습니다.")
@@ -293,41 +299,88 @@ else:
 
     st.success("관리자 인증 완료 ✅")
 
-    st.subheader("현재 공지 목록")
+    st.subheader("현재 공지 목록 (수정 후 저장)")
 
-    # 공지 편집 UI
-    edited = []
-    for i, n in enumerate(st.session_state["notices"], start=1):
-        col1, col2 = st.columns([8, 1.5])
+    # 공지 편집 영역: text_input은 session_state에 저장되므로, 저장 버튼에서 한 번에 반영
+    for i in range(len(st.session_state["notices"])):
+        col1, col2 = st.columns([8, 1.6])
         with col1:
-            val = st.text_input(f"{i}.", value=n, key=f"notice_{i}")
+            st.text_input(
+                f"{i+1}.",
+                value=st.session_state["notices"][i],
+                key=f"notice_edit_{i}",
+            )
         with col2:
-            del_click = st.button("삭제", key=f"del_{i}")
-        if not del_click:
-            edited.append(val)
+            if st.button("삭제", key=f"notice_delete_{i}"):
+                # ✅ 삭제는 session_state 리스트를 직접 수정
+                st.session_state["notices"].pop(i)
+
+                # 편집 키들이 인덱스 기반이라 삭제 후 정리 필요 (안 하면 값이 꼬일 수 있음)
+                for k in list(st.session_state.keys()):
+                    if k.startswith("notice_edit_"):
+                        del st.session_state[k]
+
+                save_notices(st.session_state["notices"])
+                st.success("삭제 완료 ✅")
+                st.rerun()
 
     st.divider()
 
     st.subheader("공지 추가")
-    new_notice = st.text_input("새 공지 내용", placeholder="예) 2025-01-05 쿠팡 송장 포맷 업데이트 예정")
-    add = st.button("추가")
+    new_notice = st.text_input(
+        "새 공지 내용",
+        placeholder="예) 2025-01-05 쿠팡 송장 포맷 업데이트 예정",
+        key="new_notice_input",
+    )
 
-    if add and new_notice.strip():
-        edited.append(new_notice.strip())
-        st.success("추가했습니다. 아래 '저장'을 눌러 반영하세요.")
+    c_add1, c_add2 = st.columns([2, 8])
+    with c_add1:
+        if st.button("추가", key="notice_add"):
+            if new_notice.strip():
+                st.session_state["notices"].append(new_notice.strip())
+                st.session_state["new_notice_input"] = ""  # 입력창 비우기
+                save_notices(st.session_state["notices"])
+                st.success("추가 완료 ✅")
+                # 편집 키도 초기화(인덱스 싱크)
+                for k in list(st.session_state.keys()):
+                    if k.startswith("notice_edit_"):
+                        del st.session_state[k]
+                st.rerun()
+            else:
+                st.warning("공지 내용을 입력하세요.")
 
     st.divider()
 
+    # ✅ 저장 버튼: notice_edit_*에 입력된 값을 notices로 반영 후 저장
     c1, c2, c3 = st.columns([2, 2, 6])
     with c1:
-        if st.button("저장"):
-            st.session_state["notices"] = [x.strip() for x in edited if x and x.strip()]
+        if st.button("저장", key="notice_save"):
+            updated = []
+            for i in range(len(st.session_state["notices"])):
+                val = st.session_state.get(f"notice_edit_{i}", st.session_state["notices"][i])
+                val = str(val).strip()
+                if val:
+                    updated.append(val)
+
+            st.session_state["notices"] = updated
             save_notices(st.session_state["notices"])
+
+            # 편집 키 정리(인덱스 기반)
+            for k in list(st.session_state.keys()):
+                if k.startswith("notice_edit_"):
+                    del st.session_state[k]
+
             st.success("저장 완료 ✅ 홈 화면에 즉시 반영됩니다.")
+            st.rerun()
+
     with c2:
-        if st.button("기본값 복원"):
+        if st.button("기본값 복원", key="notice_reset"):
             st.session_state["notices"] = DEFAULT_NOTICES.copy()
             save_notices(st.session_state["notices"])
-            st.info("기본값으로 복원했습니다.")
 
-    st.caption(f"마지막 저장: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} (서버 기준)")
+            for k in list(st.session_state.keys()):
+                if k.startswith("notice_edit_"):
+                    del st.session_state[k]
+
+            st.info("기본값으로 복원했습니다.")
+            st.rerun()
