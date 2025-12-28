@@ -95,7 +95,7 @@ st.markdown(
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 18px 18px;
+        padding: 22px 22px;
         border-radius: 16px;
         border: 1px solid rgba(0,0,0,0.08);
         background: #ffffff;
@@ -123,7 +123,7 @@ st.markdown(
         flex: 0 0 auto;
       }
       .label {
-        font-size: clamp(30px, 2.2vw, 24px);
+        font-size: clamp(50px, 2.6vw, 50px);
         font-weight: 900;
         letter-spacing: -0.6px;
         color: #111;
