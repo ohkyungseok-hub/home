@@ -2,6 +2,8 @@ import streamlit as st
 import streamlit.components.v1 as components
 from pathlib import Path
 import base64
+import json
+from datetime import datetime
 
 # -----------------------------
 # 기본 설정
@@ -13,27 +15,24 @@ st.set_page_config(
 )
 
 # -----------------------------
-# 공지 데이터 (여기만 수정)
+# 설정값
 # -----------------------------
-NOTICES = [
-    "미로상사 sku는 항상 50개 이상 유지합시다",
-    "주7일 출고가 시작되었습니다",
-    "퇴근시 화기 점검 필수",
-    "로이로라가 보고 있습니다"
-]
-
-# 스크롤 속도(초) - 숫자 클수록 느림
 SCROLL_SECONDS = 10
+NOTICE_FILE = Path("notices.json")
+
+# 관리자 비밀번호 (1) secrets 우선, (2) 없으면 기본값 사용
+# .streamlit/secrets.toml 에 ADMIN_PASSWORD="원하는비번" 으로 넣는걸 추천
+ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "admin1234")
 
 # -----------------------------
-# 링크 매핑 (아이콘, 라벨, URL)
+# 메뉴
 # -----------------------------
 MENU = [
-    ("📦", "제안 상품 일괄등록", "https://newappuct-3jvtvi9fafvdhqhzmstvs3.streamlit.app"),
+    ("📦", "제안 상품 등록", "https://newappuct-3jvtvi9fafvdhqhzmstvs3.streamlit.app"),
     ("🧾", "피킹용 주문서 출력", "https://g89qgzdijtiiazrp2rvflj.streamlit.app"),
     ("🚚", "합배/단품 나누어서 송장 출력", "https://songjangg.streamlit.app"),
     ("🏬", "쿠팡/스마트스토어 송장 출력", "https://coupsmartconvert.streamlit.app"),
-    ("📋", "창고임당용 주문서 변환 및 송장번호 등록용", "https://finalbalzoo.streamlit.app"),
+    ("📋", "창고입당용 주문서 변환 및 송장번호 등록용", "https://finalbalzoo.streamlit.app"),
 ]
 
 # -----------------------------
@@ -54,6 +53,34 @@ logo_path = find_logo_path()
 logo_b64 = img_to_base64(logo_path) if logo_path else None
 
 # -----------------------------
+# 공지 로드/저장
+# -----------------------------
+DEFAULT_NOTICES = [
+    "2025-01-05 쿠팡 송장 포맷 업데이트 예정",
+    "금일(12/28) 18:00 시스템 점검 예정",
+    "신규 기능: 제안상품 자동 분류 기능 추가",
+    "출고 마감: 평일 16:30 / 토 12:00",
+]
+
+def load_notices() -> list[str]:
+    if NOTICE_FILE.exists():
+        try:
+            data = json.loads(NOTICE_FILE.read_text(encoding="utf-8"))
+            if isinstance(data, list):
+                return [str(x) for x in data if str(x).strip()]
+        except Exception:
+            pass
+    return DEFAULT_NOTICES.copy()
+
+def save_notices(notices: list[str]) -> None:
+    clean = [n.strip() for n in notices if n and n.strip()]
+    NOTICE_FILE.write_text(json.dumps(clean, ensure_ascii=False, indent=2), encoding="utf-8")
+
+# 세션 공지 캐시
+if "notices" not in st.session_state:
+    st.session_state["notices"] = load_notices()
+
+# -----------------------------
 # 스타일
 # -----------------------------
 st.markdown(
@@ -67,9 +94,7 @@ st.markdown(
         padding: 8px 10px 28px;
       }}
 
-      /* =========================
-         공지 자동 스크롤 보드
-         ========================= */
+      /* 공지 자동 스크롤 */
       .notice-box {{
         background: #f8f9fb;
         border: 1px solid rgba(0,0,0,0.08);
@@ -83,45 +108,30 @@ st.markdown(
         font-weight: 900;
         margin-bottom: 10px;
       }}
-
-      /* 보이는 창(높이) */
       .ticker {{
-        height: 54px;              /* 공지 2줄 정도 보이게 */
+        height: 54px;
         overflow: hidden;
-        position: relative;
       }}
-
-      /* 실제 움직이는 영역 */
       .ticker-inner {{
         display: grid;
         gap: 6px;
-        will-change: transform;
         animation: scrollUp {SCROLL_SECONDS}s linear infinite;
       }}
-
-      /* 마우스 올리면 멈춤 */
       .ticker:hover .ticker-inner {{
         animation-play-state: paused;
       }}
-
       .notice-item {{
         font-size: 15px;
-        line-height: 1.5;
-        color: #111;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }}
-
-      /* 위로 스크롤 애니메이션 */
       @keyframes scrollUp {{
-        0%   {{ transform: translateY(0); }}
+        0% {{ transform: translateY(0); }}
         100% {{ transform: translateY(-50%); }}
       }}
 
-      /* =========================
-         타이틀/로고/메뉴
-         ========================= */
+      /* 타이틀 */
       .title {{
         text-align: center;
         font-size: clamp(30px, 4.2vw, 46px);
@@ -135,22 +145,28 @@ st.markdown(
         margin-bottom: 18px;
       }}
 
+      /* 로고 - 실무용 베스트 */
       .logo {{
         display: flex;
         justify-content: center;
         margin: 10px 0 24px;
       }}
       .logo img {{
-        width: 220px;
+        width: 280px;
         max-width: 72vw;
-        filter: drop-shadow(0px 10px 18px rgba(0,0,0,0.12));
+        height: auto;
+
+        border-radius: 18px;
+        border: 1px solid rgba(0,0,0,0.08);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        background: #fff;
       }}
 
+      /* 메뉴 */
       .menu {{
         display: grid;
         gap: 14px;
       }}
-
       .btn {{
         display: flex;
         justify-content: space-between;
@@ -162,22 +178,20 @@ st.markdown(
         box-shadow: 0px 8px 20px rgba(0,0,0,0.06);
         text-decoration: none !important;
       }}
-
       .btn-left {{
         display: flex;
         align-items: center;
         gap: 12px;
         min-width: 0;
       }}
-
-      .icon {{ font-size: 28px; line-height: 1; }}
+      .icon {{ font-size: 28px; }}
       .label {{
         font-size: clamp(22px, 2.6vw, 30px);
         font-weight: 900;
+        color: #111;
+        white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        white-space: nowrap;
-        color: #111;
       }}
       .arrow {{ font-size: 20px; color: rgba(0,0,0,0.45); }}
 
@@ -193,42 +207,50 @@ st.markdown(
 )
 
 # -----------------------------
-# 화면 렌더링
+# 사이드바: 페이지 선택
 # -----------------------------
-st.markdown('<div class="wrap">', unsafe_allow_html=True)
+st.sidebar.title("📦 출고통합시스템")
+page = st.sidebar.radio("이동", ["홈", "공지 관리자"], index=0)
 
-# ✅ 공지 자동 스크롤 (무한 루프 위해 2번 반복)
-items = ""
-for n in NOTICES:
-    items += f'<div class="notice-item">📢 {n}</div>'
+# -----------------------------
+# 페이지: 홈
+# -----------------------------
+if page == "홈":
+    st.markdown('<div class="wrap">', unsafe_allow_html=True)
 
-ticker_html = f"""
-<div class="notice-box">
-  <div class="notice-title">📌 공지사항 (마우스 올리면 일시정지)</div>
-  <div class="ticker">
-    <div class="ticker-inner">
-      {items}
-      {items}
-    </div>
-  </div>
-</div>
-"""
-st.markdown(ticker_html, unsafe_allow_html=True)
+    notices = st.session_state["notices"]
+    if not notices:
+        notices = ["공지사항이 없습니다."]
 
-# 타이틀/로고
-st.markdown('<div class="title">E- 편한 출고</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">출고통합시스템</div>', unsafe_allow_html=True)
+    items = "".join([f'<div class="notice-item">📢 {n}</div>' for n in notices])
 
-if logo_b64:
     st.markdown(
-        f'<div class="logo"><img src="data:image/png;base64,{logo_b64}"></div>',
+        f"""
+        <div class="notice-box">
+          <div class="notice-title">📌 공지사항 (마우스 올리면 일시정지)</div>
+          <div class="ticker">
+            <div class="ticker-inner">
+              {items}
+              {items}
+            </div>
+          </div>
+        </div>
+        """,
         unsafe_allow_html=True
     )
 
-# 메뉴 (components.html로 안전 렌더링)
-menu_html = '<div class="menu">'
-for icon, label, url in MENU:
-    menu_html += f"""
+    st.markdown('<div class="title">E- 편한 출고</div>', unsafe_allow_html=True)
+    st.markdown('<div class="subtitle">출고통합시스템</div>', unsafe_allow_html=True)
+
+    if logo_b64:
+        st.markdown(
+            f'<div class="logo"><img src="data:image/png;base64,{logo_b64}"></div>',
+            unsafe_allow_html=True
+        )
+
+    menu_html = '<div class="menu">'
+    for icon, label, url in MENU:
+        menu_html += f"""
 <a class="btn" href="{url}" target="_blank" rel="noopener noreferrer">
   <div class="btn-left">
     <div class="icon">{icon}</div>
@@ -237,13 +259,75 @@ for icon, label, url in MENU:
   <div class="arrow">↗</div>
 </a>
 """.strip()
-menu_html += "</div>"
+    menu_html += "</div>"
 
-components.html(menu_html, height=120 * len(MENU) + 40, scrolling=False)
+    components.html(menu_html, height=120 * len(MENU) + 40, scrolling=False)
 
-# 푸터
-st.markdown(
-    '<div class="footerline">ⓒ AFOURS Co., Ltd. | E-편한 출고 통합시스템</div>',
-    unsafe_allow_html=True
-)
-st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown(
+        '<div class="footerline">ⓒ AFOURS Co., Ltd. | E-편한 출고 통합시스템</div>',
+        unsafe_allow_html=True
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# -----------------------------
+# 페이지: 공지 관리자
+# -----------------------------
+else:
+    st.title("🔐 공지 관리자")
+
+    with st.expander("비밀번호 입력", expanded=True):
+        pw = st.text_input("관리자 비밀번호", type="password", placeholder="비밀번호를 입력하세요")
+        ok = st.button("로그인")
+
+    # 로그인 상태 유지
+    if "admin_ok" not in st.session_state:
+        st.session_state["admin_ok"] = False
+
+    if ok:
+        st.session_state["admin_ok"] = (pw == ADMIN_PASSWORD)
+
+    if not st.session_state["admin_ok"]:
+        st.warning("로그인 후 공지를 수정할 수 있습니다.")
+        st.caption("※ 비밀번호는 secrets.toml에 ADMIN_PASSWORD로 설정하는 것을 권장합니다.")
+        st.stop()
+
+    st.success("관리자 인증 완료 ✅")
+
+    st.subheader("현재 공지 목록")
+
+    # 공지 편집 UI
+    edited = []
+    for i, n in enumerate(st.session_state["notices"], start=1):
+        col1, col2 = st.columns([8, 1.5])
+        with col1:
+            val = st.text_input(f"{i}.", value=n, key=f"notice_{i}")
+        with col2:
+            del_click = st.button("삭제", key=f"del_{i}")
+        if not del_click:
+            edited.append(val)
+
+    st.divider()
+
+    st.subheader("공지 추가")
+    new_notice = st.text_input("새 공지 내용", placeholder="예) 2025-01-05 쿠팡 송장 포맷 업데이트 예정")
+    add = st.button("추가")
+
+    if add and new_notice.strip():
+        edited.append(new_notice.strip())
+        st.success("추가했습니다. 아래 '저장'을 눌러 반영하세요.")
+
+    st.divider()
+
+    c1, c2, c3 = st.columns([2, 2, 6])
+    with c1:
+        if st.button("저장"):
+            st.session_state["notices"] = [x.strip() for x in edited if x and x.strip()]
+            save_notices(st.session_state["notices"])
+            st.success("저장 완료 ✅ 홈 화면에 즉시 반영됩니다.")
+    with c2:
+        if st.button("기본값 복원"):
+            st.session_state["notices"] = DEFAULT_NOTICES.copy()
+            save_notices(st.session_state["notices"])
+            st.info("기본값으로 복원했습니다.")
+
+    st.caption(f"마지막 저장: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} (서버 기준)")
