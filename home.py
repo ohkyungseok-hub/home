@@ -141,7 +141,7 @@ st.markdown(
         margin: 10px 0 24px;
       }}
       .logo img {{
-        width: 280px;
+        width: 220px;
         max-width: 72vw;
         filter: drop-shadow(0px 10px 18px rgba(0,0,0,0.12));
       }}
