@@ -41,7 +41,7 @@ MENU = [
     ("🧾", "피킹용 주문서 출력", "https://g89qgzdijtiiazrp2rvflj.streamlit.app"),
     ("🚚", "합배/단품 나누어서 송장 출력", "https://songjangg.streamlit.app"),
     ("🏬", "쿠팡/스마트스토어 송장 출력", "https://coupsmartconvert.streamlit.app"),
-    ("📋", "창고입당용 주문서 변환 및 송장번호 등록용", "https://finalbalzoo.streamlit.app"),
+    ("📋", "송장번호 등록용", "https://cjsongjang.streamlit.app/"),
     ("💰", "일일 매출 계산하기", "https://countdaily.streamlit.app/"),
     ("⚙️", "스마트스토어 상품변환", "https://smartconver.streamlit.app/"),
 ]
